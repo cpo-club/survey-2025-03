@@ -1,0 +1,554 @@
+---
+title: "Survey results"
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    toc: true
+params:
+  update_data: true
+  gs_name: "CPO Member Survey (Responses)"
+  csv_fn: cpo_survey_2025.csv
+knitr:
+  opts_chunk:
+    fig.path: include/fig/ 
+---
+
+## About
+
+This page documents the procedure for cleaning and visualizing results from 
+the Central Pennsylvania Observers March 2025 survey.
+
+## Survey
+
+Direct link: <https://docs.google.com/forms/d/e/1FAIpQLScWSF5_mUWJHatvsmPOE4APbl48tZv0FjzbnmHj8mmAiWLdPQ/viewform?usp=header>
+
+## Preparation
+
+First, we load the external packages (groups of R commands) that we will be using.
+
+::: {.callout-important}
+
+The code uses the `quietly()` function from the `purrr` package to suppress most of the feedback.
+
+:::
+
+```{r}
+#| warning: false
+library('ggplot2')
+library('dplyr')
+
+r_functions <- list.files(file.path(here::here(), "src", "R"), "\\.R$", full.names = TRUE)
+
+purrr::map(r_functions, source) |>
+  purrr::quietly()
+```
+
+## Gathering
+
+The survey data are stored in a Google Sheet.
+
+Next, we download the data from the Google Sheet where it is collected.
+Gilmore has stored his Google account credentials in a special environment file that can be accessed by the R command `Sys.getenv("GMAIL_SURVEY")`.
+
+```{r, eval=params$update_data}
+#| label: gather-data-from-google
+#| message: false
+#| echo: true
+if (!dir.exists(file.path("include", "csv"))) {
+  message("Creating missing `include/csv/`.")
+  dir.create(file.path("include", "csv"))
+}
+
+if (params$update_data) {
+  options(gargle_oauth_email = Sys.getenv("GMAIL_SURVEY"))
+  googledrive::drive_auth()
+
+  googledrive::drive_download(
+    params$gs_name,
+    path = file.path("include", "csv", params$csv_fn),
+    type = "csv",
+    overwrite = TRUE
+  )
+  message("Data updated.")
+} else {
+  message("Using stored data.")
+}
+```
+
+## Cleaning
+
+We import the downloaded data.
+
+```{r}
+results <- readr::read_csv(file = file.path("include", "csv", params$csv_fn),
+                           show_col_types = FALSE)
+dim(results)
+```
+
+As of `{r} Sys.time()` we have `{r} dim(results)[1]` responses.
+
+### Shorten long names
+
+The raw question values are as follows:
+
+```{r}
+names(results)
+```
+
+Then, we shorten the long names to make them more useful for data visualization and for making the data dictionary.
+
+```{r}
+renamed_cols <- results |>
+  dplyr::rename("time_stamp" = "Timestamp",
+                "activities_2024" = "Which of the following astronomy activities did you participate in during 2024?",
+                "activities_2025" = "Which of the following astronomy activities do you plan to participate in during 2025?",
+                "activities_volunteer" = "Which of the following activities would you like to get more involved with as a volunteer?",
+                "astro_goals" = "Do you have any particular astronomy goals?",
+                "interest_in_visual" = "Rate your level of interest in the following activities. [Visual astronomy]",
+                "interest_in_astrophoto" = "Rate your level of interest in the following activities. [Astrophotography]",
+                "interest_in_sci_talks" = "Rate your level of interest in the following activities. [Science-oriented talks]",
+                "interest_in_social" = "Rate your level of interest in the following activities. [Social gatherings]",
+                "interest_in_how_tos" = "Rate your level of interest in the following activities. [Tutorials/how-to's]",
+                "interest_in_field_trips" = "Rate your level of interest in the following activities. [Field trips]",
+                "interest_in_gear" = "Rate your level of interest in the following activities. [Gear and tech]",
+                "interest_in_public_events" = "Rate your level of interest in the following activities. [Events for the public]",
+                "club_does_well" = "What is something the club does really well?",
+                "club_could_improve" = "What is something the club could do to improve?",
+                "club_should_offer" = "Is there something the club should offer that we are not currently doing?",
+                "anything_else" = "Anything else?",
+                "respondent_name" = "Your name (totally optional)")
+```
+
+### Make data dictionary
+
+```{r}
+data_dict <- data.frame(questions = names(results), shortnames = names(renamed_cols))
+```
+
+### Split variables
+
+Some variables have multiple responses.
+These should ideally be put into separate column variables.
+
+We'll split the activities* variables first
+
+```{r}
+split_activities <- renamed_cols |>
+  dplyr::mutate(
+    activities_2024_monthly_mtg = stringr::str_detect(activities_2024, "CPO monthly"),
+    activities_2024_skywatch = stringr::str_detect(activities_2024, "CPO hosted Sky watch"),
+    activities_2024_eclipse_personal = stringr::str_detect(activities_2024, "Personal eclipse activity"),
+    activities_2024_eclipse_club = stringr::str_detect(activities_2024, "Club eclipse trip"),
+    activities_2024_bfsp = stringr::str_detect(activities_2024, "Black Forest Star Party"),
+    activities_2024_on_tap = stringr::str_detect(activities_2024, "Penn State Astronomy on Tap"),
+    activities_2025_monthly_mtg = stringr::str_detect(activities_2025, "CPO monthly"),
+    activities_2025_skywatch = stringr::str_detect(activities_2025, "CPO Sky watch"),
+    activities_2025_bfsp = stringr::str_detect(activities_2025, "Black Forest Star Party"),
+    activities_2025_on_tap = stringr::str_detect(activities_2025, "Penn State Astronomy on Tap")
+  )
+```
+
+Then we split `astronomy_goals`.
+
+```{r}
+split_goals <- split_activities |>
+  dplyr::mutate(
+    astro_goals_more_scope = stringr::str_detect(astro_goals, "Use my telescope more"),
+    astro_goals_buy_gear = stringr::str_detect(astro_goals, "Buy new (to me) gear"),    
+    astro_goals_learn_sky = stringr::str_detect(astro_goals, "Learn more about the night sky"),
+    astro_goals_astrophoto = stringr::str_detect(astro_goals, "Try astrophotography"),
+    astro_goals_meet_folks = stringr::str_detect(astro_goals, "Meet other like-minded folks"),
+    astro_goals_plan_trip = stringr::str_detect(astro_goals, "Plan an observing trip")
+  ) |>
+  dplyr::select(-c(activities_2024, activities_2025, astro_goals))
+```
+
+### Drop test cases
+
+Joe and Chris helped test the survey back in December.
+We'll drop their test responses.
+
+```{r}
+survey_cleaned <- split_goals |>
+  dplyr::filter(!stringr::str_detect(time_stamp, "2024"))
+```
+
+## Visualize
+
+As of `{r} Sys.time()`, we have had *n*=`{r} dim(survey_cleaned)` responses.
+
+### 2024 Activities
+
+>`{r} data_dict$questions[2]`
+
+#### Club meeting
+
+```{r}
+#| label: fig-attended-2024-club-meeting
+#| fig-cap: "Attended a club meeting in 2024"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2024_monthly_mtg) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Montly meeting")
+```
+
+#### Skywatch
+
+```{r}
+#| label: fig-activities_2024_skywatch
+#| fig-cap: "Attended a skywatch in 2024"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2024_skywatch) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Skywatches")
+```
+
+#### Eclipse: Personal
+
+```{r}
+#| label: fig-activities_2024_eclipse_personal
+#| fig-cap: "Participated in a personal eclipse activity"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2024_eclipse_personal) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Personal eclipse activity")
+```
+
+#### Eclipse: Club
+
+```{r}
+#| label: fig-activities_2024_eclipse_club
+#| fig-cap: "Participated in club eclipse trip"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2024_eclipse_club) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Club eclipse trip")
+```
+
+#### BFSP
+
+```{r}
+#| label: fig-activities_2024_bfsp
+#| fig-cap: "Attended BFSP in 2024"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2024_bfsp) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("BFSP")
+```
+
+#### PSU On-tap
+
+```{r}
+#| label: fig-activities_2024_on_tap
+#| fig-cap: "Attended Penn State on Tap in 2024"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2024_on_tap) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Skywatch")
+```
+
+### 2025 Plans
+
+>`{r} data_dict$questions[3]`
+
+#### Club meeting
+
+```{r}
+#| label: fig-activities_2025_monthly_mtg
+#| fig-cap: "Attend a club meeting in 2025"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2025_monthly_mtg) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Montly meeting")
+```
+
+#### Skywatch
+
+```{r}
+#| label: fig-activities_2025_skywatch
+#| fig-cap: "Attend a skywatch in 2025"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2025_skywatch) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Skywatches")
+```
+
+#### BFSP
+
+```{r}
+#| label: fig-activities_2025_bfsp
+#| fig-cap: "Attend BFSP in 2025"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2025_bfsp) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("BFSP")
+```
+
+#### PSU On-tap
+
+```{r}
+#| label: fig-activities_2025_on_tap
+#| fig-cap: "Attend Penn State on Tap in 2025"
+survey_cleaned |>
+  ggplot() +
+  aes(x=activities_2025_on_tap) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Skywatch")
+```
+
+### Volunteering
+
+>`{r} data_dict$questions[4]`
+
+```{r}
+survey_cleaned |>
+  dplyr::select(activities_volunteer) |>
+  dplyr::filter(!is.na(activities_volunteer)) |>
+  knitr::kable(format = 'html')
+```
+
+### Interests
+
+>`{r} data_dict$questions[3]`
+
+#### Visual astronomy
+
+```{r}
+#| label: fig-interest_in_visual
+#| fig-cap: "Interest in visual astronomy"
+survey_cleaned |>
+  dplyr::mutate(interest_in_visual = factor(interest_in_visual, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+  ggplot() +
+  aes(x=interest_in_visual, fill = interest_in_visual) +
+  geom_bar(stat = "count", position="dodge") +
+  theme(legend.position = "none") +
+  xlab("")
+```
+
+#### Astrophotography
+
+```{r}
+#| label: fig-interest_in_astrophoto
+#| fig-cap: "Interest in astrophotography"
+survey_cleaned |>
+  dplyr::mutate(interest_in_astrophoto = factor(interest_in_astrophoto, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+  ggplot() +
+  aes(x = interest_in_astrophoto, fill = interest_in_astrophoto) +
+  geom_bar(stat = "count", position="dodge") +
+  theme(legend.position = "none") +
+  xlab("")
+```
+
+#### Science talks
+
+```{r}
+#| label: fig-interest_in_sci_talks
+#| fig-cap: "Interest in astrophotography"
+survey_cleaned |>
+  dplyr::mutate(interest_in_sci_talks = factor(interest_in_sci_talks, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+  ggplot() +
+  aes(x = interest_in_sci_talks, fill = interest_in_sci_talks) +
+  geom_bar(stat = "count", position="dodge") +
+  theme(legend.position = "none") +
+  xlab("")
+```
+
+#### Social gatherings
+
+```{r}
+#| label: fig-interest_in_social
+#| fig-cap: "Interest in social gatherings"
+survey_cleaned |>
+  dplyr::mutate(interest_in_social = factor(interest_in_social, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+  ggplot() +
+  aes(x = interest_in_social, fill = interest_in_social) +
+  geom_bar(stat = "count", position="dodge") +
+  theme(legend.position = "none") +
+  xlab("")
+```
+
+#### How-to's
+
+```{r}
+#| label: fig-interest_in_how_tos
+#| fig-cap: "Interest in how-to's"
+survey_cleaned |>
+  dplyr::mutate(interest_in_how_tos = factor(interest_in_how_tos, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+  ggplot() +
+  aes(x = interest_in_how_tos, fill = interest_in_how_tos) +
+  geom_bar(stat = "count", position="dodge") +
+  theme(legend.position = "none") +
+  xlab("")
+```
+
+#### Gear
+
+```{r}
+#| label: fig-interest_in_gear
+#| fig-cap: "Interest in gear"
+survey_cleaned |>
+  dplyr::mutate(interest_in_gear = factor(interest_in_gear, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+  ggplot() +
+  aes(x = interest_in_gear, fill = interest_in_gear) +
+  geom_bar(stat = "count", position="dodge") +
+  theme(legend.position = "none") +
+  xlab("")
+```
+
+#### Field trips
+
+```{r}
+#| label: fig-interest_in_field_trips
+#| fig-cap: "Interest in field trips"
+survey_cleaned |>
+  dplyr::mutate(interest_in_field_trips = factor(interest_in_field_trips, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+  ggplot() +
+  aes(x = interest_in_field_trips, fill = interest_in_field_trips) +
+  geom_bar(stat = "count", position="dodge") +
+  theme(legend.position = "none") +
+  xlab("")
+```
+
+#### Public events
+
+```{r}
+#| label: fig-interest_in_public_events
+#| fig-cap: "Interest in public events"
+survey_cleaned |>
+  dplyr::mutate(interest_in_public_events = factor(interest_in_public_events, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+  ggplot() +
+  aes(x = interest_in_public_events, fill = interest_in_public_events) +
+  geom_bar(stat = "count", position="dodge") +
+  theme(legend.position = "none") +
+  xlab("")
+```
+
+### Goals
+
+>`{r} data_dict$questions[5]`
+
+#### "Use my telescope more"
+
+```{r}
+#| label: fig-astro_goals_more_scope
+#| fig-cap: "Attend Penn State on Tap in 2025"
+survey_cleaned |>
+  dplyr::filter(!is.na(astro_goals_more_scope)) |>
+  ggplot() +
+  aes(x = astro_goals_more_scope) +
+  geom_bar(stat = "count", position = "dodge") +
+  xlab("Use scope more")
+```
+
+#### "Buy new (to me) gear"
+
+```{r}
+#| label: fig-astro_goals_buy_gear
+#| fig-cap: "Buy new gear"
+survey_cleaned |>
+  dplyr::filter(!is.na(astro_goals_buy_gear)) |>
+  ggplot() +
+  aes(x = astro_goals_buy_gear) +
+  geom_bar(stat = "count", position = "dodge") +
+  xlab("Use scope more")
+```
+
+#### "Learn more about the night sky"
+
+```{r}
+#| label: fig-astro_goals_learn_sky
+#| fig-cap: "Learn more about the night sky"
+survey_cleaned |>
+  dplyr::filter(!is.na(astro_goals_learn_sky)) |>
+  ggplot() +
+  aes(x = astro_goals_learn_sky) +
+  geom_bar(stat = "count", position = "dodge") +
+  xlab("Use scope more")
+```
+
+#### "Try astrophotography"
+
+```{r}
+#| label: fig-astro_goals_astrophoto
+#| fig-cap: "Learn more about astrophotography"
+survey_cleaned |>
+  dplyr::filter(!is.na(astro_goals_astrophoto)) |>
+  ggplot() +
+  aes(x = astro_goals_astrophoto) +
+  geom_bar(stat = "count", position = "dodge") +
+  xlab("Astrophotography")
+```
+
+#### "Meet other like-minded folks"
+
+```{r}
+#| label: fig-astro_goals_meet_folks
+#| fig-cap: "Meet like-minded folks"
+survey_cleaned |>
+  dplyr::filter(!is.na(astro_goals_meet_folks)) |>
+  ggplot() +
+  aes(x = astro_goals_meet_folks) +
+  geom_bar(stat = "count", position = "dodge") +
+  xlab("Meet folks")
+```
+
+#### "Plan an observing trip"
+
+```{r}
+#| label: fig-astro_goals_plan_trip
+#| fig-cap: "Plan observing trip"
+survey_cleaned |>
+  dplyr::filter(!is.na(astro_goals_plan_trip)) |>
+  ggplot() +
+  aes(x = astro_goals_plan_trip) +
+  geom_bar(stat = "count", position = "dodge") +
+  xlab("Plan trip")
+```
+
+### CPO as a club
+
+#### "`{r} data_dict$questions[14]`"
+
+```{r}
+survey_cleaned |>
+  dplyr::select(club_does_well) |>
+  dplyr::filter(!is.na(club_does_well)) |>
+  knitr::kable(format = 'html')
+```
+
+#### "`{r} data_dict$questions[15]`"
+
+```{r}
+survey_cleaned |>
+  dplyr::select(club_could_improve) |>
+  dplyr::filter(!is.na(club_could_improve)) |>
+  knitr::kable(format = 'html')
+```
+
+#### "`{r} data_dict$questions[16]`"
+
+```{r}
+survey_cleaned |>
+  dplyr::select(club_should_offer) |>
+  dplyr::filter(!is.na(club_should_offer)) |>
+  knitr::kable(format = 'html')
+```
+
+#### "`{r} data_dict$questions[17]`"
+
+```{r}
+survey_cleaned |>
+  dplyr::select(anything_else) |>
+  dplyr::filter(!is.na(anything_else)) |>
+  knitr::kable(format = 'html')
+```
