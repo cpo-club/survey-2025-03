@@ -83,10 +83,7 @@ We import the downloaded data.
 ```{r}
 results <- readr::read_csv(file = file.path("include", "csv", params$csv_fn),
                            show_col_types = FALSE)
-dim(results)
 ```
-
-As of `{r} Sys.time()` we have `{r} dim(results)[1]` responses.
 
 ### Shorten long names
 
@@ -176,7 +173,7 @@ survey_cleaned <- split_goals |>
 
 ## Visualize
 
-As of `{r} Sys.time()`, we have had *n*=`{r} dim(survey_cleaned)` responses.
+As of `{r} Sys.time()`, we have had *n*=`{r} dim(survey_cleaned)[1]` responses.
 
 ### 2024 Activities
 
@@ -319,7 +316,7 @@ survey_cleaned |>
 
 ### Interests
 
->`{r} data_dict$questions[3]`
+>Rate your level of interest in the following activities:
 
 #### Visual astronomy
 
