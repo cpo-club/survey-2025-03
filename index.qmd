@@ -23,7 +23,7 @@ the Central Pennsylvania Observers March 2025 survey.
 
 Direct link: <https://docs.google.com/forms/d/e/1FAIpQLScWSF5_mUWJHatvsmPOE4APbl48tZv0FjzbnmHj8mmAiWLdPQ/viewform?usp=header>
 
-## Preparation
+## Prepare
 
 First, we load the external packages (groups of R commands) that we will be using.
 
@@ -44,7 +44,7 @@ purrr::map(r_functions, source) |>
   purrr::quietly()
 ```
 
-## Gathering
+## Gather
 
 The survey data are stored in a Google Sheet.
 
@@ -76,7 +76,7 @@ if (params$update_data) {
 }
 ```
 
-## Cleaning
+## Clean
 
 We import the downloaded data.
 
@@ -151,12 +151,12 @@ Then we split `astronomy_goals`.
 ```{r}
 split_goals <- split_activities |>
   dplyr::mutate(
-    astro_goals_more_scope = stringr::str_detect(astro_goals, "Use my telescope more"),
-    astro_goals_buy_gear = stringr::str_detect(astro_goals, "Buy new (to me) gear"),    
-    astro_goals_learn_sky = stringr::str_detect(astro_goals, "Learn more about the night sky"),
-    astro_goals_astrophoto = stringr::str_detect(astro_goals, "Try astrophotography"),
-    astro_goals_meet_folks = stringr::str_detect(astro_goals, "Meet other like-minded folks"),
-    astro_goals_plan_trip = stringr::str_detect(astro_goals, "Plan an observing trip")
+    more_scope = stringr::str_detect(astro_goals, "Use my telescope more"),
+    buy_gear = stringr::str_detect(astro_goals, "Buy new (to me) gear"),    
+    learn_sky = stringr::str_detect(astro_goals, "Learn more about the night sky"),
+    astrophoto = stringr::str_detect(astro_goals, "Try astrophotography"),
+    meet_folks = stringr::str_detect(astro_goals, "Meet other like-minded folks"),
+    plan_trip = stringr::str_detect(astro_goals, "Plan an observing trip")
   ) |>
   dplyr::select(-c(activities_2024, activities_2025, astro_goals))
 ```
@@ -171,139 +171,185 @@ survey_cleaned <- split_goals |>
   dplyr::filter(!stringr::str_detect(time_stamp, "2024"))
 ```
 
+### Convert TRUE/FALSE
+
+```{r}
+survey_cleaned <- survey_cleaned |>
+  mutate(club_mtg_24 = if_else(activities_2024_monthly_mtg, "yes", "no"),
+         skywatch_24 = if_else(activities_2024_skywatch, "yes", "no"),
+         eclipse_personal_24 = if_else(activities_2024_eclipse_personal, "yes", "no"),
+         eclipse_club_24 = if_else(activities_2024_eclipse_club, "yes", "no"),
+         bfsp_24 = if_else(activities_2024_bfsp, "yes", "no"),
+         on_tap_24 = if_else(activities_2024_on_tap, "yes", "no"),
+         club_mtg_25 = if_else(activities_2025_monthly_mtg, "yes", "no"),
+         skywatch_25 = if_else(activities_2025_skywatch, "yes", "no"),
+         bfsp_25 = if_else(activities_2025_bfsp, "yes", "no"),
+         on_tap_25 = if_else(activities_2025_on_tap, "yes", "no"),
+         more_scope = if_else(more_scope, "yes", "no"),
+         buy_gear = if_else(buy_gear, "yes", "no"),
+         learn_sky = if_else(learn_sky, "yes", "no"),
+         astrophoto = if_else(astrophoto, "yes", "no"),
+         meet_folks = if_else(meet_folks, "yes", "no"),
+         plan_trip = if_else(plan_trip, "yes", "no")
+         )
+```
+
 ## Visualize
 
 As of `{r} Sys.time()`, we have had *n*=`{r} dim(survey_cleaned)[1]` responses.
 
-### 2024 Activities
+### Activities 2024/Plans 2025
 
+#### Club meetings
+
+:::: {.columns}
+::: {.column width=50%}
 >`{r} data_dict$questions[2]`
-
-#### Club meeting
 
 ```{r}
 #| label: fig-attended-2024-club-meeting
 #| fig-cap: "Attended a club meeting in 2024"
 survey_cleaned |>
   ggplot() +
-  aes(x=activities_2024_monthly_mtg) +
+  aes(x = club_mtg_24, fill = club_mtg_24) +
   geom_bar(stat = "count", position="dodge") +
-  xlab("Montly meeting")
+  xlab("Montly meeting") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
-
-#### Skywatch
-
-```{r}
-#| label: fig-activities_2024_skywatch
-#| fig-cap: "Attended a skywatch in 2024"
-survey_cleaned |>
-  ggplot() +
-  aes(x=activities_2024_skywatch) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Skywatches")
-```
-
-#### Eclipse: Personal
-
-```{r}
-#| label: fig-activities_2024_eclipse_personal
-#| fig-cap: "Participated in a personal eclipse activity"
-survey_cleaned |>
-  ggplot() +
-  aes(x=activities_2024_eclipse_personal) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Personal eclipse activity")
-```
-
-#### Eclipse: Club
-
-```{r}
-#| label: fig-activities_2024_eclipse_club
-#| fig-cap: "Participated in club eclipse trip"
-survey_cleaned |>
-  ggplot() +
-  aes(x=activities_2024_eclipse_club) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Club eclipse trip")
-```
-
-#### BFSP
-
-```{r}
-#| label: fig-activities_2024_bfsp
-#| fig-cap: "Attended BFSP in 2024"
-survey_cleaned |>
-  ggplot() +
-  aes(x=activities_2024_bfsp) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("BFSP")
-```
-
-#### PSU On-tap
-
-```{r}
-#| label: fig-activities_2024_on_tap
-#| fig-cap: "Attended Penn State on Tap in 2024"
-survey_cleaned |>
-  ggplot() +
-  aes(x=activities_2024_on_tap) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Skywatch")
-```
-
-### 2025 Plans
-
+:::
+::: {.column width=50%}
 >`{r} data_dict$questions[3]`
-
-#### Club meeting
 
 ```{r}
 #| label: fig-activities_2025_monthly_mtg
 #| fig-cap: "Attend a club meeting in 2025"
 survey_cleaned |>
   ggplot() +
-  aes(x=activities_2025_monthly_mtg) +
+  aes(x = club_mtg_25, fill = club_mtg_25) +
   geom_bar(stat = "count", position="dodge") +
-  xlab("Montly meeting")
+  xlab("Montly meeting") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
+:::
+::::
 
-#### Skywatch
+#### Skywatches
 
+:::: {.columns}
+::: {.column width=50%}
+```{r}
+#| label: fig-activities_2024_skywatch
+#| fig-cap: "Attended a skywatch in 2024"
+survey_cleaned |>
+  ggplot() +
+  aes(x = skywatch_24, fill = skywatch_24) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Skywatches") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+```
+:::
+::: {.column width=50%}
 ```{r}
 #| label: fig-activities_2025_skywatch
 #| fig-cap: "Attend a skywatch in 2025"
 survey_cleaned |>
   ggplot() +
-  aes(x=activities_2025_skywatch) +
+  aes(x = skywatch_25, fill = skywatch_25) +
   geom_bar(stat = "count", position="dodge") +
-  xlab("Skywatches")
+  xlab("Skywatches") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
+:::
+::::
 
 #### BFSP
 
+:::: {.columns}
+::: {.column width=50%}
+```{r}
+#| label: fig-activities_2024_bfsp
+#| fig-cap: "Attended BFSP in 2024"
+survey_cleaned |>
+  ggplot() +
+  aes(x = bfsp_24, fill = bfsp_24) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("BFSP") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+```
+:::
+::: {.column width=50%}
 ```{r}
 #| label: fig-activities_2025_bfsp
 #| fig-cap: "Attend BFSP in 2025"
 survey_cleaned |>
   ggplot() +
-  aes(x=activities_2025_bfsp) +
+  aes(x = bfsp_25, fill = bfsp_25) +
   geom_bar(stat = "count", position="dodge") +
-  xlab("BFSP")
+  xlab("BFSP") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
+:::
+::::
 
 #### PSU On-tap
 
+:::: {.columns}
+::: {.column width=50%}
+```{r}
+#| label: fig-activities_2024_on_tap
+#| fig-cap: "Attended Penn State on Tap in 2024"
+survey_cleaned |>
+  ggplot() +
+  aes(x = on_tap_24, fill = on_tap_24) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Skywatch") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+```
+:::
+::: {.column width=50%}
 ```{r}
 #| label: fig-activities_2025_on_tap
 #| fig-cap: "Attend Penn State on Tap in 2025"
 survey_cleaned |>
   ggplot() +
-  aes(x=activities_2025_on_tap) +
+  aes(x = on_tap_25, fill = on_tap_25) +
   geom_bar(stat = "count", position="dodge") +
-  xlab("Skywatch")
+  xlab("Skywatch") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
+:::
+::::
 
-### Volunteering
+#### 2025 Eclipse
+
+:::: {.columns}
+::: {.column width=50%}
+```{r}
+#| label: fig-activities_2024_eclipse_personal
+#| fig-cap: "Participated in a personal eclipse activity"
+survey_cleaned |>
+  ggplot() +
+  aes(x = eclipse_personal_24, fill = eclipse_personal_24) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Personal eclipse activity") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+```
+:::
+::: {.column width=50%}
+```{r}
+#| label: fig-activities_2024_eclipse_club
+#| fig-cap: "Participated in club eclipse trip"
+survey_cleaned |>
+  ggplot() +
+  aes(x = eclipse_club_24, fill = eclipse_club_24) +
+  geom_bar(stat = "count", position="dodge") +
+  xlab("Club eclipse trip") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+```
+:::
+::::
+
+### Volunteering in 2025
 
 >`{r} data_dict$questions[4]`
 
@@ -329,7 +375,8 @@ survey_cleaned |>
   aes(x=interest_in_visual, fill = interest_in_visual) +
   geom_bar(stat = "count", position="dodge") +
   theme(legend.position = "none") +
-  xlab("")
+  xlab("") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### Astrophotography
@@ -343,7 +390,8 @@ survey_cleaned |>
   aes(x = interest_in_astrophoto, fill = interest_in_astrophoto) +
   geom_bar(stat = "count", position="dodge") +
   theme(legend.position = "none") +
-  xlab("")
+  xlab("") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### Science talks
@@ -357,7 +405,8 @@ survey_cleaned |>
   aes(x = interest_in_sci_talks, fill = interest_in_sci_talks) +
   geom_bar(stat = "count", position="dodge") +
   theme(legend.position = "none") +
-  xlab("")
+  xlab("") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### Social gatherings
@@ -371,7 +420,8 @@ survey_cleaned |>
   aes(x = interest_in_social, fill = interest_in_social) +
   geom_bar(stat = "count", position="dodge") +
   theme(legend.position = "none") +
-  xlab("")
+  xlab("") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### How-to's
@@ -385,7 +435,8 @@ survey_cleaned |>
   aes(x = interest_in_how_tos, fill = interest_in_how_tos) +
   geom_bar(stat = "count", position="dodge") +
   theme(legend.position = "none") +
-  xlab("")
+  xlab("") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### Gear
@@ -399,7 +450,8 @@ survey_cleaned |>
   aes(x = interest_in_gear, fill = interest_in_gear) +
   geom_bar(stat = "count", position="dodge") +
   theme(legend.position = "none") +
-  xlab("")
+  xlab("") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### Field trips
@@ -413,7 +465,8 @@ survey_cleaned |>
   aes(x = interest_in_field_trips, fill = interest_in_field_trips) +
   geom_bar(stat = "count", position="dodge") +
   theme(legend.position = "none") +
-  xlab("")
+  xlab("") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### Public events
@@ -427,7 +480,8 @@ survey_cleaned |>
   aes(x = interest_in_public_events, fill = interest_in_public_events) +
   geom_bar(stat = "count", position="dodge") +
   theme(legend.position = "none") +
-  xlab("")
+  xlab("") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 ### Goals
@@ -437,79 +491,85 @@ survey_cleaned |>
 #### "Use my telescope more"
 
 ```{r}
-#| label: fig-astro_goals_more_scope
-#| fig-cap: "Attend Penn State on Tap in 2025"
+#| label: fig-more_scope
+#| fig-cap: "Use my telescope more"
 survey_cleaned |>
-  dplyr::filter(!is.na(astro_goals_more_scope)) |>
+  dplyr::filter(!is.na(more_scope)) |>
   ggplot() +
-  aes(x = astro_goals_more_scope) +
+  aes(x = more_scope, fill = more_scope) +
   geom_bar(stat = "count", position = "dodge") +
-  xlab("Use scope more")
+  xlab("Use scope more") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### "Buy new (to me) gear"
 
 ```{r}
-#| label: fig-astro_goals_buy_gear
+#| label: fig-buy_gear
 #| fig-cap: "Buy new gear"
 survey_cleaned |>
-  dplyr::filter(!is.na(astro_goals_buy_gear)) |>
+  dplyr::filter(!is.na(buy_gear)) |>
   ggplot() +
-  aes(x = astro_goals_buy_gear) +
+  aes(x = buy_gear, fill = buy_gear) +
   geom_bar(stat = "count", position = "dodge") +
-  xlab("Use scope more")
+  xlab("Use scope more") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### "Learn more about the night sky"
 
 ```{r}
-#| label: fig-astro_goals_learn_sky
+#| label: fig-learn_sky
 #| fig-cap: "Learn more about the night sky"
 survey_cleaned |>
-  dplyr::filter(!is.na(astro_goals_learn_sky)) |>
+  dplyr::filter(!is.na(learn_sky)) |>
   ggplot() +
-  aes(x = astro_goals_learn_sky) +
+  aes(x = learn_sky, fill = learn_sky) +
   geom_bar(stat = "count", position = "dodge") +
-  xlab("Use scope more")
+  xlab("Use scope more") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### "Try astrophotography"
 
 ```{r}
-#| label: fig-astro_goals_astrophoto
+#| label: fig-astrophoto
 #| fig-cap: "Learn more about astrophotography"
 survey_cleaned |>
-  dplyr::filter(!is.na(astro_goals_astrophoto)) |>
+  dplyr::filter(!is.na(astrophoto)) |>
   ggplot() +
-  aes(x = astro_goals_astrophoto) +
+  aes(x = astrophoto, fill = astrophoto) +
   geom_bar(stat = "count", position = "dodge") +
-  xlab("Astrophotography")
+  xlab("Astrophotography") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### "Meet other like-minded folks"
 
 ```{r}
-#| label: fig-astro_goals_meet_folks
+#| label: fig-meet_folks
 #| fig-cap: "Meet like-minded folks"
 survey_cleaned |>
-  dplyr::filter(!is.na(astro_goals_meet_folks)) |>
+  dplyr::filter(!is.na(meet_folks)) |>
   ggplot() +
-  aes(x = astro_goals_meet_folks) +
+  aes(x = meet_folks, fill = meet_folks) +
   geom_bar(stat = "count", position = "dodge") +
-  xlab("Meet folks")
+  xlab("Meet folks") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 #### "Plan an observing trip"
 
 ```{r}
-#| label: fig-astro_goals_plan_trip
+#| label: fig-plan_trip
 #| fig-cap: "Plan observing trip"
 survey_cleaned |>
-  dplyr::filter(!is.na(astro_goals_plan_trip)) |>
+  dplyr::filter(!is.na(plan_trip)) |>
   ggplot() +
-  aes(x = astro_goals_plan_trip) +
+  aes(x = plan_trip, fill = plan_trip) +
   geom_bar(stat = "count", position = "dodge") +
-  xlab("Plan trip")
+  xlab("Plan trip") +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
 ```
 
 ### CPO as a club
