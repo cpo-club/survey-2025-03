@@ -532,3 +532,14 @@ survey_cleaned |>
                 !stringr::str_detect(anything_else, "N/A")) |>
   knitr::kable(format = 'html')
 ```
+
+#### (Optional) respondent names
+
+```{r}
+survey_cleaned |>
+  dplyr::select(respondent_name) |>
+  dplyr::filter(!is.na(respondent_name), 
+                !stringr::str_detect(respondent_name, "N/A")) |>
+  knitr::kable(format = 'html')
+```
+
