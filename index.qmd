@@ -198,6 +198,45 @@ survey_cleaned <- survey_cleaned |>
 
 As of `{r} Sys.time()`, we have had *n*=`{r} dim(survey_cleaned)[1]` responses.
 
+```{r}
+# Define helper plot functions
+cpo_col_plot <- function(data, var) {
+  data |>
+    dplyr::filter(!is.na({{ var }})) |>
+    count({{ var }}) |>
+    ggplot() +
+    aes(x = {{ var }}, fill = {{ var }}, y = n) +
+    geom_col() +
+    geom_text(aes(label = n),
+              size = 3,
+              position = position_stack(vjust = 0.5)) +
+    xlab(NULL) +
+    scale_y_continuous(breaks = c(5, 10, 15, 20)) +
+    theme(legend.position = "none")
+}
+# 
+# survey_cleaned |> cpo_col_plot(club_mtg_24)
+
+cpo_interest_plot <- function(data, var) {
+  data |>
+    dplyr::mutate(this_interest = factor({{ var }}, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
+    dplyr::count(this_interest) |>
+    dplyr::filter(!is.na(this_interest)) |>
+  ggplot() +
+  aes(x = this_interest, fill = this_interest, y = n) +
+  geom_col() +
+  geom_text(aes(label = n),
+              size = 3,
+              position = position_stack(vjust = 0.5)) +
+  theme(legend.position = "none") +
+  xlab(NULL) +
+  scale_y_continuous(breaks = c(5, 10, 15, 20))
+}
+
+#survey_cleaned |> cpo_interest_plot(interest_in_visual)
+```
+
+
 ### Activities 2024/Plans 2025
 
 #### Club meetings
@@ -210,11 +249,7 @@ As of `{r} Sys.time()`, we have had *n*=`{r} dim(survey_cleaned)[1]` responses.
 #| label: fig-attended-2024-club-meeting
 #| fig-cap: "Attended a club meeting in 2024"
 survey_cleaned |>
-  ggplot() +
-  aes(x = club_mtg_24, fill = club_mtg_24) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Montly meeting") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(club_mtg_24)
 ```
 :::
 ::: {.column width=50%}
@@ -224,11 +259,7 @@ survey_cleaned |>
 #| label: fig-activities_2025_monthly_mtg
 #| fig-cap: "Attend a club meeting in 2025"
 survey_cleaned |>
-  ggplot() +
-  aes(x = club_mtg_25, fill = club_mtg_25) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Montly meeting") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(club_mtg_24)
 ```
 :::
 ::::
@@ -241,11 +272,7 @@ survey_cleaned |>
 #| label: fig-activities_2024_skywatch
 #| fig-cap: "Attended a skywatch in 2024"
 survey_cleaned |>
-  ggplot() +
-  aes(x = skywatch_24, fill = skywatch_24) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Skywatches") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(skywatch_24)
 ```
 :::
 ::: {.column width=50%}
@@ -253,11 +280,7 @@ survey_cleaned |>
 #| label: fig-activities_2025_skywatch
 #| fig-cap: "Attend a skywatch in 2025"
 survey_cleaned |>
-  ggplot() +
-  aes(x = skywatch_25, fill = skywatch_25) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Skywatches") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(skywatch_25)
 ```
 :::
 ::::
@@ -270,11 +293,7 @@ survey_cleaned |>
 #| label: fig-activities_2024_bfsp
 #| fig-cap: "Attended BFSP in 2024"
 survey_cleaned |>
-  ggplot() +
-  aes(x = bfsp_24, fill = bfsp_24) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("BFSP") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(bfsp_24)
 ```
 :::
 ::: {.column width=50%}
@@ -282,11 +301,7 @@ survey_cleaned |>
 #| label: fig-activities_2025_bfsp
 #| fig-cap: "Attend BFSP in 2025"
 survey_cleaned |>
-  ggplot() +
-  aes(x = bfsp_25, fill = bfsp_25) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("BFSP") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(bfsp_25)
 ```
 :::
 ::::
@@ -299,11 +314,7 @@ survey_cleaned |>
 #| label: fig-activities_2024_on_tap
 #| fig-cap: "Attended Penn State on Tap in 2024"
 survey_cleaned |>
-  ggplot() +
-  aes(x = on_tap_24, fill = on_tap_24) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Skywatch") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(on_tap_24)
 ```
 :::
 ::: {.column width=50%}
@@ -311,11 +322,7 @@ survey_cleaned |>
 #| label: fig-activities_2025_on_tap
 #| fig-cap: "Attend Penn State on Tap in 2025"
 survey_cleaned |>
-  ggplot() +
-  aes(x = on_tap_25, fill = on_tap_25) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Skywatch") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(on_tap_25)
 ```
 :::
 ::::
@@ -328,11 +335,7 @@ survey_cleaned |>
 #| label: fig-activities_2024_eclipse_personal
 #| fig-cap: "Participated in a personal eclipse activity"
 survey_cleaned |>
-  ggplot() +
-  aes(x = eclipse_personal_24, fill = eclipse_personal_24) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Personal eclipse activity") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(eclipse_personal_24)
 ```
 :::
 ::: {.column width=50%}
@@ -340,11 +343,7 @@ survey_cleaned |>
 #| label: fig-activities_2024_eclipse_club
 #| fig-cap: "Participated in club eclipse trip"
 survey_cleaned |>
-  ggplot() +
-  aes(x = eclipse_club_24, fill = eclipse_club_24) +
-  geom_bar(stat = "count", position="dodge") +
-  xlab("Club eclipse trip") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(eclipse_club_24)
 ```
 :::
 ::::
@@ -370,13 +369,7 @@ survey_cleaned |>
 #| label: fig-interest_in_visual
 #| fig-cap: "Interest in visual astronomy"
 survey_cleaned |>
-  dplyr::mutate(interest_in_visual = factor(interest_in_visual, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
-  ggplot() +
-  aes(x=interest_in_visual, fill = interest_in_visual) +
-  geom_bar(stat = "count", position="dodge") +
-  theme(legend.position = "none") +
-  xlab("") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_interest_plot(interest_in_visual)
 ```
 
 #### Astrophotography
@@ -385,28 +378,16 @@ survey_cleaned |>
 #| label: fig-interest_in_astrophoto
 #| fig-cap: "Interest in astrophotography"
 survey_cleaned |>
-  dplyr::mutate(interest_in_astrophoto = factor(interest_in_astrophoto, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
-  ggplot() +
-  aes(x = interest_in_astrophoto, fill = interest_in_astrophoto) +
-  geom_bar(stat = "count", position="dodge") +
-  theme(legend.position = "none") +
-  xlab("") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_interest_plot(interest_in_astrophoto)
 ```
 
 #### Science talks
 
 ```{r}
 #| label: fig-interest_in_sci_talks
-#| fig-cap: "Interest in astrophotography"
+#| fig-cap: "Interest in scientific talks"
 survey_cleaned |>
-  dplyr::mutate(interest_in_sci_talks = factor(interest_in_sci_talks, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
-  ggplot() +
-  aes(x = interest_in_sci_talks, fill = interest_in_sci_talks) +
-  geom_bar(stat = "count", position="dodge") +
-  theme(legend.position = "none") +
-  xlab("") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_interest_plot(interest_in_sci_talks)
 ```
 
 #### Social gatherings
@@ -415,13 +396,7 @@ survey_cleaned |>
 #| label: fig-interest_in_social
 #| fig-cap: "Interest in social gatherings"
 survey_cleaned |>
-  dplyr::mutate(interest_in_social = factor(interest_in_social, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
-  ggplot() +
-  aes(x = interest_in_social, fill = interest_in_social) +
-  geom_bar(stat = "count", position="dodge") +
-  theme(legend.position = "none") +
-  xlab("") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_interest_plot(interest_in_social)
 ```
 
 #### How-to's
@@ -430,13 +405,7 @@ survey_cleaned |>
 #| label: fig-interest_in_how_tos
 #| fig-cap: "Interest in how-to's"
 survey_cleaned |>
-  dplyr::mutate(interest_in_how_tos = factor(interest_in_how_tos, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
-  ggplot() +
-  aes(x = interest_in_how_tos, fill = interest_in_how_tos) +
-  geom_bar(stat = "count", position="dodge") +
-  theme(legend.position = "none") +
-  xlab("") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_interest_plot(interest_in_how_tos)
 ```
 
 #### Gear
@@ -445,13 +414,7 @@ survey_cleaned |>
 #| label: fig-interest_in_gear
 #| fig-cap: "Interest in gear"
 survey_cleaned |>
-  dplyr::mutate(interest_in_gear = factor(interest_in_gear, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
-  ggplot() +
-  aes(x = interest_in_gear, fill = interest_in_gear) +
-  geom_bar(stat = "count", position="dodge") +
-  theme(legend.position = "none") +
-  xlab("") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_interest_plot(interest_in_gear)
 ```
 
 #### Field trips
@@ -460,13 +423,7 @@ survey_cleaned |>
 #| label: fig-interest_in_field_trips
 #| fig-cap: "Interest in field trips"
 survey_cleaned |>
-  dplyr::mutate(interest_in_field_trips = factor(interest_in_field_trips, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
-  ggplot() +
-  aes(x = interest_in_field_trips, fill = interest_in_field_trips) +
-  geom_bar(stat = "count", position="dodge") +
-  theme(legend.position = "none") +
-  xlab("") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_interest_plot(interest_in_field_trips)
 ```
 
 #### Public events
@@ -475,13 +432,7 @@ survey_cleaned |>
 #| label: fig-interest_in_public_events
 #| fig-cap: "Interest in public events"
 survey_cleaned |>
-  dplyr::mutate(interest_in_public_events = factor(interest_in_public_events, levels = c("Minimal interest", "Some interest", "Considerable interest"))) |>
-  ggplot() +
-  aes(x = interest_in_public_events, fill = interest_in_public_events) +
-  geom_bar(stat = "count", position="dodge") +
-  theme(legend.position = "none") +
-  xlab("") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_interest_plot(interest_in_public_events)
 ```
 
 ### Goals
@@ -494,12 +445,7 @@ survey_cleaned |>
 #| label: fig-more_scope
 #| fig-cap: "Use my telescope more"
 survey_cleaned |>
-  dplyr::filter(!is.na(more_scope)) |>
-  ggplot() +
-  aes(x = more_scope, fill = more_scope) +
-  geom_bar(stat = "count", position = "dodge") +
-  xlab("Use scope more") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(more_scope)
 ```
 
 #### "Buy new (to me) gear"
@@ -508,12 +454,7 @@ survey_cleaned |>
 #| label: fig-buy_gear
 #| fig-cap: "Buy new gear"
 survey_cleaned |>
-  dplyr::filter(!is.na(buy_gear)) |>
-  ggplot() +
-  aes(x = buy_gear, fill = buy_gear) +
-  geom_bar(stat = "count", position = "dodge") +
-  xlab("Use scope more") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(buy_gear)
 ```
 
 #### "Learn more about the night sky"
@@ -522,12 +463,7 @@ survey_cleaned |>
 #| label: fig-learn_sky
 #| fig-cap: "Learn more about the night sky"
 survey_cleaned |>
-  dplyr::filter(!is.na(learn_sky)) |>
-  ggplot() +
-  aes(x = learn_sky, fill = learn_sky) +
-  geom_bar(stat = "count", position = "dodge") +
-  xlab("Use scope more") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(learn_sky)
 ```
 
 #### "Try astrophotography"
@@ -536,12 +472,7 @@ survey_cleaned |>
 #| label: fig-astrophoto
 #| fig-cap: "Learn more about astrophotography"
 survey_cleaned |>
-  dplyr::filter(!is.na(astrophoto)) |>
-  ggplot() +
-  aes(x = astrophoto, fill = astrophoto) +
-  geom_bar(stat = "count", position = "dodge") +
-  xlab("Astrophotography") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(astrophoto)
 ```
 
 #### "Meet other like-minded folks"
@@ -550,12 +481,7 @@ survey_cleaned |>
 #| label: fig-meet_folks
 #| fig-cap: "Meet like-minded folks"
 survey_cleaned |>
-  dplyr::filter(!is.na(meet_folks)) |>
-  ggplot() +
-  aes(x = meet_folks, fill = meet_folks) +
-  geom_bar(stat = "count", position = "dodge") +
-  xlab("Meet folks") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(meet_folks)
 ```
 
 #### "Plan an observing trip"
@@ -564,12 +490,7 @@ survey_cleaned |>
 #| label: fig-plan_trip
 #| fig-cap: "Plan observing trip"
 survey_cleaned |>
-  dplyr::filter(!is.na(plan_trip)) |>
-  ggplot() +
-  aes(x = plan_trip, fill = plan_trip) +
-  geom_bar(stat = "count", position = "dodge") +
-  xlab("Plan trip") +
-  scale_y_continuous(breaks = c(2, 4, 6, 8, 10, 12))
+  cpo_col_plot(plan_trip)
 ```
 
 ### CPO as a club
@@ -597,7 +518,8 @@ survey_cleaned |>
 ```{r}
 survey_cleaned |>
   dplyr::select(club_should_offer) |>
-  dplyr::filter(!is.na(club_should_offer)) |>
+  dplyr::filter(!is.na(club_should_offer),
+                !stringr::str_detect(club_should_offer, "N/A")) |>
   knitr::kable(format = 'html')
 ```
 
@@ -606,6 +528,7 @@ survey_cleaned |>
 ```{r}
 survey_cleaned |>
   dplyr::select(anything_else) |>
-  dplyr::filter(!is.na(anything_else)) |>
+  dplyr::filter(!is.na(anything_else), 
+                !stringr::str_detect(anything_else, "N/A")) |>
   knitr::kable(format = 'html')
 ```
