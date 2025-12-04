@@ -327,7 +327,7 @@ survey_cleaned |>
 :::
 ::::
 
-#### 2025 Eclipse
+#### 2024 Eclipse
 
 :::: {.columns}
 ::: {.column width=50%}
